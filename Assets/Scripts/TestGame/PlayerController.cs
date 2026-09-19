@@ -20,6 +20,9 @@ public class PlayerController : MonoBehaviour
     // --- VARIABLES DE AUDIO ---
     public AudioClip pickupSound;
     public AudioClip deathSound;
+    public AudioClip winSound;       // Nuevo: Sonido de victoria
+    public AudioClip collisionSound; // Nuevo: Sonido al chocar con paredes/objetos
+
     private AudioSource audioSource;
 
     void Start()
@@ -59,6 +62,7 @@ public class PlayerController : MonoBehaviour
 
             SetCountText();
 
+            // Sonido al recoger un cubo
             if (audioSource != null && pickupSound != null)
             {
                 audioSource.PlayOneShot(pickupSound);
@@ -72,6 +76,19 @@ public class PlayerController : MonoBehaviour
 
         if (count >= 12)
         {
+            // 1. Detiene todos los audios activos (música de fondo, etc.)
+            AudioSource[] allAudioSources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
+            foreach (AudioSource audio in allAudioSources)
+            {
+                audio.Stop();
+            }
+
+            // 2. Reproduce el sonido de victoria
+            if (winSound != null && audioSource != null)
+            {
+                audioSource.PlayOneShot(winSound);
+            }
+
             winTextObject.SetActive(true);
 
             Destroy(GameObject.FindGameObjectWithTag("Enemy"));
@@ -80,16 +97,17 @@ public class PlayerController : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
+        // Si colisiona con el enemigo -> Derrota
         if (collision.gameObject.CompareTag("Enemy"))
         {
-            // 1. Busca y detiene todos los audios activos en la escena (música de fondo, ambientales, etc.)
+            // Apaga todos los audios
             AudioSource[] allAudioSources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
             foreach (AudioSource audio in allAudioSources)
             {
                 audio.Stop();
             }
 
-            // 2. Reproduce únicamente el sonido de muerte
+            // Reproduce el sonido de muerte
             if (deathSound != null)
             {
                 AudioSource.PlayClipAtPoint(deathSound, transform.position);
@@ -99,6 +117,14 @@ public class PlayerController : MonoBehaviour
 
             winTextObject.gameObject.SetActive(true);
             winTextObject.GetComponent<TextMeshProUGUI>().text = "You Lose!";
+        }
+        // Si colisiona con cualquier otro objeto (paredes, obstáculos, etc.)
+        else
+        {
+            if (collisionSound != null && audioSource != null)
+            {
+                audioSource.PlayOneShot(collisionSound);
+            }
         }
     }
 }
